@@ -1,7 +1,6 @@
 import os
 import torch
 import torchaudio
-from speechbrain.pretrained import SpeakerRecognition
 from pyannote.audio import Model, Inference
 import httpx
 
@@ -32,17 +31,11 @@ def bandpass_filter(data, lowcut, highcut, fs, order=5):
     return y
 
 
-speaker_model = SpeakerRecognition.from_hparams(
-    source="speechbrain/spkrec-ecapa-voxceleb", savedir="tmp_model"
-)
+
 model = Model.from_pretrained("pyannote/wespeaker-voxceleb-resnet34-LM")
 inference = Inference(model, window="whole")
 
 pipeline = KPipeline(lang_code='a')
-
-def get_speaker_embedding(preprocessed_signal: torch.Tensor):
-    embedding = speaker_model.encode_batch(preprocessed_signal)
-    return embedding.squeeze().detach().cpu().numpy()
 
 
 def preprocess_audio(audio_path: str, fs=16000):

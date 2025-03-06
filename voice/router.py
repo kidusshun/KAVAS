@@ -7,9 +7,9 @@ import av
 from typing import Optional
 
 # from pydub import AudioSegment
-from dependencies import get_db_dependency
+from dependencies import get_db
 from sqlalchemy.orm import Session
-import torchaudio
+from psycopg2.extensions import connection
 
 from fastapi import (
     APIRouter,
@@ -43,7 +43,7 @@ async def process(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     user_name: Optional[str] = Body(None),
-    db: Session = Depends(get_db_dependency()),
+    conn: connection = Depends(get_db),
 ):
     start = time.time()
     temp_audio_path = await save_upload_file_tmp(file)
@@ -55,7 +55,7 @@ async def process(
     # if not file.filename.endswith(".wav"):
     #     contents = convert_to_wav(contents)
 
-    res = await find_user_service(audio_file_path=temp_audio_path,user_name=user_name, db= db,)
+    res = await find_user_service(audio_file_path=temp_audio_path,user_name=user_name, conn= conn,)
     lapse = time.time() - start
     return res, lapse
 
@@ -63,11 +63,11 @@ async def process(
 @voice_router.post("/tts")
 async def generate_speech(
     text: str = Body(...),
-    db: Session = Depends(get_db_dependency()),
+    conn: connection = Depends(get_db),
 ):
     start = time.time()
     # Get the audio from the text
-    audio = generate_speech_service(text, db)
+    audio = generate_speech_service(text, conn)
     lapse = time.time() - start
     return str(audio)
 
