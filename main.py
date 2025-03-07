@@ -1,8 +1,69 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from database.connection import init_db_pool, close_db_pool, check_database_connection
 from voice.router import voice_router
+import uvicorn
 
 
-app = FastAPI()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()]
+)
 
-app.include_router(voice_router)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    try:
+        logger.info("Initializing database connection pool...")
+        init_db_pool()
+        
+        logger.info("Checking database connection...")
+        check_database_connection()
+        logger.info("Database connection successful")
+    except Exception as e:
+        logger.error(f"Failed to connect to database: {str(e)}")
+        logger.warning("Application will start without database connectivity")
+        # Allow app to start even with database errors for development
+    
+    yield
+    
+    # Shutdown
+    logger.info("Closing database connection pool...")
+    close_db_pool()
+    logger.info("Application shutdown complete")
+
+
+def start_application():
+    app = FastAPI(title="KAVAS", version="0.1.0", lifespan= lifespan,)
+    
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Update this with your frontend origins in production
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    # Include routers
+    app.include_router(voice_router)
+
+    
+    # Health check endpoint
+    @app.get("/health")
+    def health_check():
+        return {"status": "healthy"}
+    
+    return app
+
+
+app = start_application()
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

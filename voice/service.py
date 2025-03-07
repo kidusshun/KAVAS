@@ -1,13 +1,10 @@
 import uuid
 from .repository import identify_user, add_user_to_db
 from .utils import (
-    preprocess_audio,
-    get_speaker_embedding,
     pyannote_embed_audio,
     whisper_transcribe,
     generate_speech,
 )
-from sqlalchemy.orm import Session
 from .types import TranscriptionResponse
 import httpx
 from psycopg2.extensions import connection
@@ -33,7 +30,7 @@ async def find_user_service(*,audio_file_path: str,user_name:str | None, conn: c
     return response
 
 
-def generate_speech_service(text: str, db: Session) -> bytes:
+def generate_speech_service(text: str) -> bytes:
     text = text.replace('\n', '')
 
     return generate_speech(text)

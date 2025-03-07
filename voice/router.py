@@ -63,12 +63,10 @@ async def process(
 @voice_router.post("/tts")
 async def generate_speech(
     text: str = Body(...),
-    conn: connection = Depends(get_db),
 ):
     start = time.time()
     # Get the audio from the text
-    audio = generate_speech_service(text, conn)
-    lapse = time.time() - start
+    audio = generate_speech_service(text)
     return str(audio)
 
 
