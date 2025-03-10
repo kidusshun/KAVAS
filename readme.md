@@ -28,9 +28,21 @@ python -m venv venv
 
 5. install dependencies
 
+- Install FFmpeg (Linux)
+
+```sh
+# For Linux
+sudo apt update
+sudo apt install ffmpeg
+```
+
+- Install requirements
+
+````
+
 ```sh
 pip install -r requirements.txt
-```
+````
 
 ## Running application
 

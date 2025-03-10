@@ -4,6 +4,7 @@ from .utils import (
     pyannote_embed_audio,
     whisper_transcribe,
     generate_speech,
+    preprocess_audio_in_memory,
 )
 from .types import TranscriptionResponse
 import httpx
@@ -11,6 +12,10 @@ from psycopg2.extensions import connection
 
 
 async def find_user_service(*,audio_file_path: str,user_name:str | None, conn: connection,) -> TranscriptionResponse:
+    # preprocess
+    # preprocessed_audio_path = preprocess_audio_in_memory(audio_file_path)
+    
+    
     # speechbrain version
     # processed_audio = preprocess_audio(audio_path=audio_file_path)
     # embedded_voice = get_speaker_embedding(processed_audio)

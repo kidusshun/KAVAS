@@ -2,6 +2,7 @@ import os
 import torch
 import torchaudio
 from pyannote.audio import Model, Inference
+from pydub import AudioSegment
 import httpx
 
 import numpy as np
@@ -9,6 +10,7 @@ from scipy.signal import butter, lfilter
 
 from dotenv import load_dotenv
 from kokoro import KPipeline
+import tempfile
 
 load_dotenv()
 
@@ -38,17 +40,20 @@ inference = Inference(model, window="whole")
 pipeline = KPipeline(lang_code='a')
 
 
-def preprocess_audio(audio_path: str, fs=16000):
-    signal, _ = torchaudio.load(audio_path, backend="av")
-    signal_np = signal.cpu().numpy().squeeze()
+def preprocess_audio_in_memory(audio_path: str):
+    # Step 1: Convert to 16kHz Mono WAV format
+    audio = convert_audio_in_memory(input_file=audio_path)
 
-    # cleaned_signal_np = bandpass_filter(signal_np, lowcut=300, highcut=3400, fs=fs)
+    with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+        temp_path = temp_file.name
+        audio.export(temp_path, format="wav")
+        return temp_path
 
-    # cleaned_signal_np = normalize(cleaned_signal_np)
 
-    cleaned_signal = torch.from_numpy(signal_np).unsqueeze(0)
-
-    return cleaned_signal
+def convert_audio_in_memory(input_file):
+    """Convert audio to 16kHz mono WAV format for Pyannote"""
+    audio = AudioSegment.from_file(input_file)
+    return audio.set_frame_rate(16000).set_channels(1)
 
 
 def pyannote_embed_audio(audio_path):
