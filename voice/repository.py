@@ -25,20 +25,14 @@ def identify_user(embedding: np.ndarray, conn: connection) -> str | None:
         return None
 
 
-def add_user_to_db(embedding: np.ndarray,user_name:str | None, conn: connection):
+def add_user_to_db(embedding: np.ndarray,user_id:uuid.UUID, conn: connection):
     register_vector(conn)
     with conn.cursor() as cur:
-        if user_name:
-            cur.execute(
-                "INSERT INTO users (id, name, voice_embedding) VALUES (%s,%s,%s) RETURNING id",
-                (str(uuid.uuid4()), user_name, embedding),
-            )
-        else:
-            cur.execute(
-                "INSERT INTO users (id, voice_embedding) VALUES (%s,%s) RETURNING id",
-                (str(uuid.uuid4()), embedding),
-            )
-        user_id = cur.fetchone()
+        cur.execute(
+            "INSERT INTO users (id, voice_embedding) VALUES (%s,%s) RETURNING id",
+            (str(user_id), embedding),
+        )
+        user = cur.fetchone()
         conn.commit()
 
-    return user_id[0] if user_id else None
+    return (user[0],user[2]) if user else None

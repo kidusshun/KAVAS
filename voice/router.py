@@ -2,9 +2,11 @@ import io
 import os
 import tempfile
 import time
-from .service import find_user_service, generate_speech_service
+from .service import find_user_service, generate_speech_service, add_user_service
+from .types import STTRequest
 import av
 from typing import Optional
+from uuid import UUID
 
 # from pydub import AudioSegment
 from dependencies import get_db
@@ -45,44 +47,38 @@ async def process(
     user_name: Optional[str] = Body(None),
     conn: connection = Depends(get_db),
 ):
+    print("Processing voice file")
     start = time.time()
     temp_audio_path = await save_upload_file_tmp(file)
     background_tasks.add_task(clean_temp_file, temp_audio_path)
 
-    # # Check if the file's extension is wav
-    # if not file.content_type.startswith("audio/"):
-    #     return {"error": "The uploaded file is not an audio file."}
-    # if not file.filename.endswith(".wav"):
-    #     contents = convert_to_wav(contents)
+    res = await find_user_service(audio_file_path=temp_audio_path,user_name=user_name, conn= conn)
+    return res
 
-    res = await find_user_service(audio_file_path=temp_audio_path,user_name=user_name, conn= conn,)
-    lapse = time.time() - start
-    return res, lapse
+@voice_router.post("/add_user")
+async def add_user_route(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    user_id: Optional[UUID] = Body(),
+    conn: connection = Depends(get_db),
+):
+    temp_audio_path = await save_upload_file_tmp(file)
+    background_tasks.add_task(clean_temp_file, temp_audio_path)
+
+    return await add_user_service(audio_file_path=temp_audio_path, user_id=user_id, conn=conn)
+    
 
 
 @voice_router.post("/tts")
 async def generate_speech(
-    text: str = Body(...),
+    request:STTRequest,
 ):
     start = time.time()
     # Get the audio from the text
-    audio = generate_speech_service(text)
+    audio = generate_speech_service(request.text)
     return str(audio)
 
 
-
-
-# def convert_to_wav(contents: bytes) -> bytes:
-#     # Convert the contents to wav
-#     audio = AudioSegment.from_file(io.BytesIO(contents))
-
-#     # Create a BytesIO buffer for WAV output
-#     wav_buffer = io.BytesIO()
-
-#     # Export the audio as WAV to the buffer
-#     audio.export(wav_buffer, format="wav")
-
-#     return wav_buffer.getvalue()
 
 
 async def save_upload_file_tmp(upload_file: UploadFile) -> str:

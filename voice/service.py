@@ -13,7 +13,7 @@ from psycopg2.extensions import connection
 
 async def find_user_service(*,audio_file_path: str,user_name:str | None, conn: connection,) -> TranscriptionResponse:
     # preprocess
-    # preprocessed_audio_path = preprocess_audio_in_memory(audio_file_path)
+    preprocessed_audio_path = preprocess_audio_in_memory(audio_file_path)
     
     
     # speechbrain version
@@ -29,7 +29,7 @@ async def find_user_service(*,audio_file_path: str,user_name:str | None, conn: c
 
     user_id = identify_user(embedded_voice, conn=conn)
     if not user_id:
-        user_id = add_user_to_db(embedded_voice,user_name, conn=conn)
+        return TranscriptionResponse(user_id=None, transcription=transcription)
 
     response = TranscriptionResponse(userid=uuid.UUID(user_id), transcription=transcription)
     return response
@@ -40,4 +40,6 @@ def generate_speech_service(text: str) -> bytes:
 
     return generate_speech(text)
 
-
+async def add_user_service(*,audio_file_path: str,user_id: uuid.UUID, conn: connection) -> tuple[uuid.UUID, float]:
+    embedded_voice = pyannote_embed_audio(audio_path=audio_file_path)
+    return add_user_to_db(embedded_voice,user_id=user_id, conn=conn) #type: ignore
